@@ -467,13 +467,16 @@ func ExecV3(ctx context.Context,
 	const FINAL_BLOCK = math.MaxUint64
 	tracker := commitment.NewStopWatch(logger)
 	isFirstBlock := true
+	finishedLastBlock := false
 Loop:
 	for ; blockNum <= maxBlockNum && blockNum <= FINAL_BLOCK; blockNum++ {
 		if isFirstBlock {
 			isFirstBlock = false
 		} else {
+			finishedLastBlock = true
 			tracker.EndBlock()
 		}
+		finishedLastBlock = false
 		tracker.StartBlock(blockNum)
 		executor.domains().SetStopWatch(tracker)
 		// set shouldGenerateChangesets=true if we are at last n blocks from maxBlockNum. this is as a safety net in chains
@@ -827,6 +830,10 @@ Loop:
 			return ctx.Err()
 		default:
 		}
+	}
+	if !isFirstBlock && !finishedLastBlock {
+		finishedLastBlock = true
+		tracker.EndBlock()
 	}
 	logger.Warn("ExecV3-6")
 
